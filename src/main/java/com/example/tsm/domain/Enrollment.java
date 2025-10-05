@@ -1,41 +1,47 @@
 package com.example.tsm.domain;
 
-import com.example.tsm.domain.enums.EnrollmentStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "enrollment", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_enrollment_student_section", columnNames = {"student_id", "section_id"})
-})
 @Getter
 @Setter
-public class Enrollment extends BaseEntity {
+@Entity
+@Table(name = "enrollment",
+       uniqueConstraints = {
+           @UniqueConstraint(name = "uk_enrollment_student_section",
+                   columnNames = {"student_id", "class_section_id"})
+       },
+       indexes = {
+           @Index(name = "idx_enr_section", columnList = "class_section_id"),
+           @Index(name = "idx_enr_student", columnList = "student_id")
+       })
+public class Enrollment {
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "student_id", nullable = false, foreignKey = @ForeignKey(name = "fk_enroll_student"))
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    // 学生
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "student_id", nullable = false,
+            foreignKey = @ForeignKey(name = "fk_enr_student"))
     private Student student;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "section_id", nullable = false, foreignKey = @ForeignKey(name = "fk_enroll_section"))
-    private ClassSection section;
+    // 教学班
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "class_section_id", nullable = false,
+            foreignKey = @ForeignKey(name = "fk_enr_section"))
+    private ClassSection classSection;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 16)
-    private EnrollmentStatus status = EnrollmentStatus.ENROLLED;
-
-    @Column(name = "score")
-    private BigDecimal score;
-
-    @Column(name = "enrolled_at", nullable = false)
+    @CreationTimestamp
     private LocalDateTime enrolledAt;
 
-    @PrePersist
-    public void prePersistEnrollment() {
-        this.enrolledAt = LocalDateTime.now();
-    }
+    // 成绩（可选）
+    @Column(precision = 5, scale = 2)
+    private BigDecimal grade;
 }
